@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Factorio Quality Condenser — Calculadora de Módulos</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
     /* ── Reset & Base ──────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -620,7 +620,7 @@
   Desenvolvido por <strong>Manus AI</strong>.
 </footer>
 
-<script defer>
+<script>
 // ════════════════════════════════════════════════════════════════════════════
 // DADOS DOS MÓDULOS (wiki.factorio.com/Module)
 // ════════════════════════════════════════════════════════════════════════════
@@ -1109,27 +1109,15 @@ document.getElementById('nMods').addEventListener('input', function() {
 });
 document.getElementById('nMods').addEventListener('input', calculate);
 
-function waitForChartAndInit() {
-  if (typeof Chart === 'undefined') {
-    setTimeout(waitForChartAndInit, 100);
-    return;
-  }
-  // Force correct defaults
-  document.getElementById('qTier').value = '3';
-  document.getElementById('qQual').value = '4';
-  document.getElementById('sTier').value = '1';
-  document.getElementById('sQual').value = '4';
-  document.getElementById('nMods').value = '4';
-  document.getElementById('nItems').value = '100';
-  syncSlider(document.getElementById('nMods'));
-  init();
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', waitForChartAndInit);
-} else {
-  waitForChartAndInit();
-}
+// Auto-init on load
+document.getElementById('qTier').value = '3';
+document.getElementById('qQual').value = '4';
+document.getElementById('sTier').value = '1';
+document.getElementById('sQual').value = '4';
+document.getElementById('nMods').value = '4';
+document.getElementById('nItems').value = '100';
+syncSlider(document.getElementById('nMods'));
+init();
 </script>
 </body>
 </html>
