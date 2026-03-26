@@ -1109,8 +1109,12 @@ document.getElementById('nMods').addEventListener('input', function() {
 });
 document.getElementById('nMods').addEventListener('input', calculate);
 
-window.addEventListener('load', function() {
-  // Force correct defaults before init
+function waitForChartAndInit() {
+  if (typeof Chart === 'undefined') {
+    setTimeout(waitForChartAndInit, 100);
+    return;
+  }
+  // Force correct defaults
   document.getElementById('qTier').value = '3';
   document.getElementById('qQual').value = '4';
   document.getElementById('sTier').value = '1';
@@ -1119,7 +1123,13 @@ window.addEventListener('load', function() {
   document.getElementById('nItems').value = '100';
   syncSlider(document.getElementById('nMods'));
   init();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', waitForChartAndInit);
+} else {
+  waitForChartAndInit();
+}
 </script>
 </body>
 </html>
