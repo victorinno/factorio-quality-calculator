@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Factorio Quality Condenser — Calculadora de Módulos</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #1a1a2e;
+      --bg2:      #16213e;
+      --bg3:      #0f3460;
+      --card:     #1e2a45;
+      --border:   #2a3a5a;
+      --text:     #e0e0e0;
+      --muted:    #8899aa;
+      --accent:   #FFD700;
+      --good:     #69F0AE;
+      --warn:     #FF5252;
+      --normal:   #9E9E9E;
+      --uncommon: #4CAF50;
+      --rare:     #42A5F5;
+      --epic:     #AB47BC;
+      --legendary:#FFA726;
+      --early:    #E91E63;
+      --mid:      #FF9800;
+      --late:     #FFD700;
+      --s1:       #00E5FF;
+      --s2:       #40C4FF;
+      --s3:       #1565C0;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+      border-bottom: 2px solid var(--accent);
+      padding: 1.5rem 2rem;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      color: var(--accent);
+      text-shadow: 0 0 20px rgba(255,215,0,0.4);
+      letter-spacing: 1px;
+    }
+    header p {
+      color: var(--muted);
+      margin-top: .4rem;
+      font-size: .95rem;
+    }
+    .mod-badge {
+      display: inline-block;
+      background: var(--bg3);
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: .2rem .8rem;
+      font-size: .8rem;
+      color: var(--accent);
+      margin-top: .5rem;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────────── */
+    .container { max-width: 1300px; margin: 0 auto; padding: 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.2rem; }
+    @media(max-width:900px) { .grid-2,.grid-3 { grid-template-columns:1fr; } }
+
+    /* ── Card ──────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.4rem;
+    }
+    .card h2 {
+      font-size: 1.05rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: .5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .card h2 .icon { font-size: 1.2rem; }
+
+    /* ── Form Controls ─────────────────────────────────────────────── */
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .8rem;
+      margin-bottom: .8rem;
+      align-items: flex-end;
+    }
+    .form-group { display: flex; flex-direction: column; gap: .3rem; flex: 1; min-width: 140px; }
+    label { font-size: .82rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    select, input[type=number], input[type=range] {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: .5rem .75rem;
+      font-size: .9rem;
+      width: 100%;
+      transition: border-color .2s;
+    }
+    select:focus, input:focus { outline: none; border-color: var(--accent); }
+    select option { background: var(--bg2); }
+
+    /* quality colour on select */
+    .q-normal   { color: var(--normal)!important; }
+    .q-uncommon { color: var(--uncommon)!important; }
+    .q-rare     { color: var(--rare)!important; }
+    .q-epic     { color: var(--epic)!important; }
+    .q-legendary{ color: var(--legendary)!important; }
+
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .btn {
+      padding: .6rem 1.4rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 700;
+      transition: all .2s;
+      letter-spacing: .5px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #FFD700, #FFA726);
+      color: #1a1a2e;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,215,0,.4); }
+    .btn-secondary {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-row { display: flex; gap: .8rem; flex-wrap: wrap; margin-top: 1rem; }
+
+    /* ── Results ───────────────────────────────────────────────────── */
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .8rem; margin-top: 1rem; }
+    .result-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+      transition: border-color .2s;
+    }
+    .result-card.highlight { border-color: var(--accent); box-shadow: 0 0 12px rgba(255,215,0,.2); }
+    .result-card .val { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+    .result-card .val.warn { color: var(--warn); }
+    .result-card .val.good { color: var(--good); }
+    .result-card .lbl { font-size: .75rem; color: var(--muted); margin-top: .3rem; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Slider display ────────────────────────────────────────────── */
+    .slider-wrap { display: flex; align-items: center; gap: .8rem; }
+    .slider-wrap input[type=range] { flex: 1; accent-color: var(--accent); padding: 0; }
+    .slider-val {
+      min-width: 2rem;
+      text-align: center;
+      font-weight: 800;
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    /* ── Chart containers ──────────────────────────────────────────── */
+    .chart-wrap { position: relative; height: 320px; }
+    .chart-wrap-tall { position: relative; height: 420px; }
+
+    /* ── Table ─────────────────────────────────────────────────────── */
+    .tbl-wrap { overflow-x: auto; margin-top: .8rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th {
+      background: var(--bg3);
+      color: var(--accent);
+      padding: .55rem .8rem;
+      text-align: left;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      white-space: nowrap;
+    }
+    td { padding: .5rem .8rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tr:hover td { background: rgba(255,215,0,.04); }
+    tr.best td { background: rgba(255,215,0,.08); color: var(--accent); font-weight: 700; }
+    tr.zero td { color: var(--warn); opacity: .7; }
+    .badge {
+      display: inline-block;
+      padding: .15rem .5rem;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+    .badge-best { background: rgba(255,215,0,.2); color: var(--accent); border: 1px solid var(--accent); }
+    .badge-zero { background: rgba(255,82,82,.2); color: var(--warn); border: 1px solid var(--warn); }
+
+    /* ── Phase tabs ────────────────────────────────────────────────── */
+    .tabs { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .tab {
+      padding: .45rem 1.1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      transition: all .2s;
+    }
+    .tab.active { background: var(--bg3); border-color: var(--accent); color: var(--accent); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Phase indicator ───────────────────────────────────────────── */
+    .phase-pill {
+      display: inline-block;
+      padding: .2rem .7rem;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+    .phase-early   { background: rgba(233,30,99,.2);  color: var(--early);  border: 1px solid var(--early); }
+    .phase-mid     { background: rgba(255,152,0,.2);  color: var(--mid);    border: 1px solid var(--mid); }
+    .phase-late    { background: rgba(255,215,0,.2);  color: var(--late);   border: 1px solid var(--late); }
+
+    /* ── Info box ──────────────────────────────────────────────────── */
+    .info-box {
+      background: rgba(255,215,0,.06);
+      border: 1px solid rgba(255,215,0,.3);
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      font-size: .85rem;
+      color: var(--text);
+      margin-top: .8rem;
+      line-height: 1.6;
+    }
+    .info-box strong { color: var(--accent); }
+    .info-box.warn-box {
+      background: rgba(255,82,82,.06);
+      border-color: rgba(255,82,82,.3);
+    }
+    .info-box.warn-box strong { color: var(--warn); }
+    .info-box.good-box {
+      background: rgba(105,240,174,.06);
+      border-color: rgba(105,240,174,.3);
+    }
+    .info-box.good-box strong { color: var(--good); }
+
+    /* ── Section title ─────────────────────────────────────────────── */
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 1.5rem 0 .8rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Footer ────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: .8rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚙️ Factorio Quality Condenser — Calculadora de Módulos</h1>
+  <p>Encontre a combinação ideal de módulos para maximizar upgrades de qualidade</p>
+  <span class="mod-badge">🔧 Mod: Quality Condenser · Factorio 2.0 Space Age</span>
+</header>
+
+<div class="container">
+
+  <!-- ── CALCULADORA PRINCIPAL ──────────────────────────────────────── -->
+  <div class="section-title">🔬 Calculadora Personalizada</div>
+  <div class="grid-2">
+
+    <!-- Painel de Configuração -->
+    <div class="card">
+      <h2><span class="icon">⚙️</span> Configuração dos Módulos</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Quality Module — Tier</label>
+          <select id="qTier">
+            <option value="1">Tier 1 (Early Game)</option>
+            <option value="2">Tier 2 (Mid Game)</option>
+            <option value="3" selected>Tier 3 (Late Game)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quality Module — Qualidade</label>
+          <select id="qQual">
+            <option value="0">Normal (+1/2/2.5%)</option>
+            <option value="1">Uncommon (+1.3/2.6/3.2%)</option>
+            <option value="2">Rare (+1.6/3.2/4.0%)</option>
+            <option value="3">Epic (+1.9/3.8/4.7%)</option>
+            <option value="4">Legendary (+2.5/5.0/6.2%)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Speed Module — Tier (no Beacon)</label>
+          <select id="sTier">
+            <option value="1">Tier 1 (Early Game)</option>
+            <option value="2">Tier 2 (Mid Game)</option>
+            <option value="3" selected>Tier 3 (Late Game)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Speed Module — Qualidade (no Beacon)</label>
+          <select id="sQual">
+            <option value="0">Normal</option>
+            <option value="1">Uncommon</option>
+            <option value="2">Rare</option>
+            <option value="3">Epic</option>
+            <option value="4" selected>Legendary</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>Módulos de Speed no Beacon: <span id="nModsLabel" style="color:var(--accent);font-weight:800">4</span></label>
+          <div class="slider-wrap">
+            <input type="range" id="nMods" min="0" max="10" value="4" oninput="syncSlider(this)">
+            <span class="slider-val" id="nModsVal">4</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Itens no Condenser</label>
+          <input type="number" id="nItems" value="100" min="1" max="10000" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calculate()">⚡ Calcular</button>
+        <button class="btn btn-secondary" onclick="findOptimal()">🎯 Encontrar Ótimo</button>
+        <button class="btn btn-secondary" onclick="resetDefaults()">↺ Padrão</button>
+      </div>
+
+      <div id="optimalMsg" class="info-box good-box" style="display:none"></div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="card">
+      <h2><span class="icon">📊</span> Resultados</h2>
+      <div class="result-grid" id="resultsGrid">
+        <div class="result-card highlight">
+          <div class="val" id="res-upg">—</div>
+          <div class="lbl">Upgrades / min</div>
+        </div>
+        <div class="result-card">
+          <div class="val" id="res-speed">—</div>
+          <div class="lbl">Velocidade Efetiva</div>
+        </div>
+        <div class="result-card">
+          <div class="val" id="res-qual">—</div>
+          <div class="lbl">Qualidade Efetiva</div>
+        </div>
+        <div class="result-card">
+          <div class="val" id="res-ttl">—</div>
+          <div class="lbl">Tempo → Legendary</div>
+        </div>
+      </div>
+      <div id="warningBox" class="info-box warn-box" style="display:none">
+        <strong>⚠️ Qualidade Zerada!</strong> A penalidade dos Speed Modules no beacon está cancelando completamente o bônus do Quality Module. A máquina nunca fará upgrades. Reduza o número de módulos no beacon ou use módulos de qualidade superior.
+      </div>
+      <div id="infoBox" class="info-box" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ── GRÁFICO PRINCIPAL ───────────────────────────────────────────── -->
+  <div class="section-title">📈 Curva de Throughput vs Módulos no Beacon</div>
+  <div class="card">
+    <h2><span class="icon">📉</span> Upgrades/min para cada número de módulos no beacon</h2>
+    <div class="chart-wrap-tall">
+      <canvas id="chartMain"></canvas>
+    </div>
+    <div class="info-box" style="margin-top:.8rem">
+      <strong>Como ler:</strong> A curva mostra o throughput (upgrades por minuto) conforme você adiciona módulos de velocidade ao beacon. O pico da curva é o ponto ótimo. Após o pico, adicionar mais módulos <strong>reduz</strong> o throughput porque a penalidade de qualidade supera o ganho de velocidade.
+    </div>
+  </div>
+
+  <!-- ── TABELA COMPLETA ─────────────────────────────────────────────── -->
+  <div class="section-title">📋 Tabela Completa (0 a 10 módulos no beacon)</div>
+  <div class="card">
+    <h2><span class="icon">📋</span> Detalhamento por número de módulos</h2>
+    <div class="tbl-wrap">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th>Módulos no Beacon</th>
+            <th>Velocidade Efetiva</th>
+            <th>Qualidade Efetiva</th>
+            <th>Upgrades / min</th>
+            <th>Tempo → Legendary</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="mainTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── COMPARATIVO POR FASE ────────────────────────────────────────── -->
+  <div class="section-title">🎮 Análise por Fase do Jogo</div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('early', this)">🔴 Early Game (T1)</div>
+    <div class="tab" onclick="switchTab('mid', this)">🟠 Mid Game (T2)</div>
+    <div class="tab" onclick="switchTab('late', this)">🟡 Late Game (T3)</div>
+    <div class="tab" onclick="switchTab('compare', this)">⚖️ Comparativo</div>
+  </div>
+
+  <!-- Early Game -->
+  <div class="tab-content active" id="tab-early">
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">🔴</span> Early Game — Quality T1 + Speed T1</h2>
+        <span class="phase-pill phase-early">Early Game</span>
+        <div class="chart-wrap" style="margin-top:.8rem">
+          <canvas id="chartEarly"></canvas>
+        </div>
+        <div class="info-box" style="margin-top:.8rem">
+          <strong>Situação Early Game:</strong> Com Quality T1 Normal (1% de qualidade), qualquer módulo de Speed T1 no beacon (-0.5%/módulo) reduz rapidamente a qualidade. O ponto ótimo é <strong>0 módulos no beacon</strong> para módulos normais. Só vale usar beacons com módulos Legendary ou Epic.
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📋</span> Tabela Early Game (módulos normais)</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>N Mods</th><th>Vel.</th><th>Qual%</th><th>Upg/min</th><th>T→Leg</th></tr>
+            </thead>
+            <tbody id="earlyTableBody"></tbody>
+          </table>
+        </div>
+        <div class="info-box warn-box" style="margin-top:.8rem">
+          <strong>⚠️ Atenção:</strong> Com módulos T1 normais, a qualidade zera com apenas <strong>2 módulos</strong> de Speed T1 no beacon. Não coloque mais do que 1 módulo no beacon nessa fase.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mid Game -->
+  <div class="tab-content" id="tab-mid">
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">🟠</span> Mid Game — Quality T2 + Speed T2</h2>
+        <span class="phase-pill phase-mid">Mid Game</span>
+        <div class="chart-wrap" style="margin-top:.8rem">
+          <canvas id="chartMid"></canvas>
+        </div>
+        <div class="info-box" style="margin-top:.8rem">
+          <strong>Situação Mid Game:</strong> Com Quality T2 Normal (2% de qualidade), a penalidade do Speed T2 (-0.75%/módulo no beacon) zera a qualidade com apenas 2-3 módulos. Com módulos Legendary, o ponto ótimo sobe para 2 módulos no beacon.
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📋</span> Tabela Mid Game (módulos normais)</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>N Mods</th><th>Vel.</th><th>Qual%</th><th>Upg/min</th><th>T→Leg</th></tr>
+            </thead>
+            <tbody id="midTableBody"></tbody>
+          </table>
+        </div>
+        <div class="info-box" style="margin-top:.8rem">
+          <strong>Melhora notável:</strong> O Quality T2 oferece o dobro de qualidade do T1. Com módulos Legendary, é possível usar até <strong>2 módulos</strong> de Speed T2 no beacon com ganho real de throughput.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Late Game -->
+  <div class="tab-content" id="tab-late">
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">🟡</span> Late Game — Quality T3 + Speed T1 Legendary</h2>
+        <span class="phase-pill phase-late">Late Game</span>
+        <div class="chart-wrap" style="margin-top:.8rem">
+          <canvas id="chartLate"></canvas>
+        </div>
+        <div class="info-box good-box" style="margin-top:.8rem">
+          <strong>✅ Configuração Ótima:</strong> Quality T3 Legendary (6.2%) na máquina + <strong>4× Speed T1 Legendary</strong> no beacon = <strong>8.19 upgrades/min</strong>. O pico ocorre em 4 módulos porque a penalidade acumulada (-2%) ainda deixa 4.2% de qualidade efetiva.
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📋</span> Tabela Late Game (Q T3 Leg + S T1 Leg)</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>N Mods</th><th>Vel.</th><th>Qual%</th><th>Upg/min</th><th>T→Leg</th></tr>
+            </thead>
+            <tbody id="lateTableBody"></tbody>
+          </table>
+        </div>
+        <div class="info-box" style="margin-top:.8rem">
+          <strong>Regra do "Menos é Mais":</strong> Encher o beacon com 10 módulos resulta em apenas 4.14 upg/min — metade do ótimo! Deixe 6 slots do beacon <strong>vazios</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparativo -->
+  <div class="tab-content" id="tab-compare">
+    <div class="card">
+      <h2><span class="icon">⚖️</span> Comparativo: Early vs Mid vs Late Game (módulos normais, ponto ótimo)</h2>
+      <div class="chart-wrap-tall">
+        <canvas id="chartCompare"></canvas>
+      </div>
+    </div>
+    <div class="grid-3" style="margin-top:1.2rem">
+      <div class="card">
+        <h2><span class="icon">🔴</span> Early Game</h2>
+        <span class="phase-pill phase-early">Tier 1</span>
+        <div class="result-grid" style="margin-top:.8rem">
+          <div class="result-card">
+            <div class="val" style="font-size:1.2rem;color:var(--early)" id="cmp-early-upg">—</div>
+            <div class="lbl">Upg/min</div>
+          </div>
+          <div class="result-card">
+            <div class="val" style="font-size:1.2rem;color:var(--early)" id="cmp-early-ttl">—</div>
+            <div class="lbl">T→Legendary</div>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:.8rem;font-size:.82rem">
+          <strong>Configuração:</strong> 1× Quality T1 Normal na máquina, 0 módulos no beacon.<br>
+          <strong>Qualidade:</strong> 1.0% | <strong>Velocidade:</strong> 0.95×
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🟠</span> Mid Game</h2>
+        <span class="phase-pill phase-mid">Tier 2</span>
+        <div class="result-grid" style="margin-top:.8rem">
+          <div class="result-card">
+            <div class="val" style="font-size:1.2rem;color:var(--mid)" id="cmp-mid-upg">—</div>
+            <div class="lbl">Upg/min</div>
+          </div>
+          <div class="result-card">
+            <div class="val" style="font-size:1.2rem;color:var(--mid)" id="cmp-mid-ttl">—</div>
+            <div class="lbl">T→Legendary</div>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:.8rem;font-size:.82rem">
+          <strong>Configuração:</strong> 1× Quality T2 Normal na máquina, 0 módulos no beacon.<br>
+          <strong>Qualidade:</strong> 2.0% | <strong>Velocidade:</strong> 0.95×
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🟡</span> Late Game</h2>
+        <span class="phase-pill phase-late">Tier 3</span>
+        <div class="result-grid" style="margin-top:.8rem">
+          <div class="result-card">
+            <div class="val" style="font-size:1.2rem;color:var(--late)" id="cmp-late-upg">—</div>
+            <div class="lbl">Upg/min</div>
+          </div>
+          <div class="result-card">
+            <div class="val" style="font-size:1.2rem;color:var(--late)" id="cmp-late-ttl">—</div>
+            <div class="lbl">T→Legendary</div>
+          </div>
+        </div>
+        <div class="info-box good-box" style="margin-top:.8rem;font-size:.82rem">
+          <strong>Configuração:</strong> 1× Quality T3 Legendary na máquina, 4× Speed T1 Legendary no beacon.<br>
+          <strong>Qualidade:</strong> 4.2% | <strong>Velocidade:</strong> 1.95×
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RANKING GERAL ────────────────────────────────────────────────── -->
+  <div class="section-title">🏆 Ranking — Top 20 Configurações</div>
+  <div class="card">
+    <h2><span class="icon">🏆</span> Melhores combinações de todos os tiers e qualidades</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Quality Module (Máquina)</th>
+            <th>Speed Module (Beacon)</th>
+            <th>N Ótimo</th>
+            <th>Velocidade</th>
+            <th>Qualidade</th>
+            <th>Upgrades/min</th>
+            <th>T→Legendary</th>
+            <th>Fase</th>
+          </tr>
+        </thead>
+        <tbody id="rankingBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  Calculadora baseada nos dados da <a href="https://wiki.factorio.com/Module" target="_blank">Wiki Oficial do Factorio</a> e no mod
+  <a href="https://mods.factorio.com/mod/quality-condenser" target="_blank">Quality Condenser</a>.
+  Desenvolvido por <strong>Manus AI</strong>.
+</footer>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// DADOS DOS MÓDULOS (wiki.factorio.com/Module)
+// ════════════════════════════════════════════════════════════════════════════
+const SPEED_BONUS = {
+  '1-0':0.20,'1-1':0.26,'1-2':0.32,'1-3':0.38,'1-4':0.50,
+  '2-0':0.30,'2-1':0.39,'2-2':0.48,'2-3':0.57,'2-4':0.75,
+  '3-0':0.50,'3-1':0.65,'3-2':0.80,'3-3':0.95,'3-4':1.25,
+};
+const QUALITY_BONUS = {
+  '1-0':0.010,'1-1':0.013,'1-2':0.016,'1-3':0.019,'1-4':0.025,
+  '2-0':0.020,'2-1':0.026,'2-2':0.032,'2-3':0.038,'2-4':0.050,
+  '3-0':0.025,'3-1':0.032,'3-2':0.040,'3-3':0.047,'3-4':0.062,
+};
+const SPEED_QUAL_PENALTY = { 1:-0.010, 2:-0.015, 3:-0.025 };
+const BEACON_COEFF = 0.5;
+const QUAL_NAMES = ['Normal','Uncommon','Rare','Epic','Legendary'];
+const QUAL_COLORS = ['#9E9E9E','#4CAF50','#42A5F5','#AB47BC','#FFA726'];
+const TIER_COLORS = ['#E91E63','#FF9800','#FFD700'];
+
+// ── Core calc ────────────────────────────────────────────────────────────────
+function calcModules(mt, mq, bt, bq, n) {
+  const spd  = Math.max(0.20, 1.0 - 0.05 + n * SPEED_BONUS[`${bt}-${bq}`] * BEACON_COEFF);
+  const qual = Math.max(0.0,  QUALITY_BONUS[`${mt}-${mq}`] + n * SPEED_QUAL_PENALTY[bt] * BEACON_COEFF);
+  return { spd, qual: qual * 100 };
+}
+function upgPerMin(spd, qual, nItems) { return spd * nItems * qual / 100; }
+function timeToLeg(spd, qual) {
+  if (qual <= 0) return Infinity;
+  return (1.0 / (qual / 100)) / spd * 4;
+}
+function findOptimal(mt, mq, bt, bq) {
+  let best = 0, bestN = 0;
+  for (let n = 0; n <= 10; n++) {
+    const { spd, qual } = calcModules(mt, mq, bt, bq, n);
+    const u = upgPerMin(spd, qual, 100);
+    if (u > best) { best = u; bestN = n; }
+  }
+  return bestN;
+}
+
+// ── Formatters ───────────────────────────────────────────────────────────────
+function fmtTime(t) {
+  if (!isFinite(t)) return '∞';
+  if (t < 60) return t.toFixed(1) + ' min';
+  return (t / 60).toFixed(1) + ' h';
+}
+function fmtUpg(u) { return u.toFixed(3); }
+
+// ── Chart registry ───────────────────────────────────────────────────────────
+const charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+const CHART_DEFAULTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { color: '#E0E0E0', font: { size: 11 } } },
+    tooltip: {
+      backgroundColor: '#1e2a45',
+      borderColor: '#2a3a5a',
+      borderWidth: 1,
+      titleColor: '#FFD700',
+      bodyColor: '#E0E0E0',
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: '#8899aa' },
+      grid:  { color: 'rgba(42,58,90,0.6)' },
+      title: { display: true, color: '#8899aa', font: { size: 11 } }
+    },
+    y: {
+      ticks: { color: '#8899aa' },
+      grid:  { color: 'rgba(42,58,90,0.6)' },
+      title: { display: true, color: '#8899aa', font: { size: 11 } }
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// CALCULADORA PRINCIPAL
+// ════════════════════════════════════════════════════════════════════════════
+function syncSlider(el) {
+  document.getElementById('nModsLabel').textContent = el.value;
+  document.getElementById('nModsVal').textContent   = el.value;
+}
+
+function calculate() {
+  const mt     = parseInt(document.getElementById('qTier').value);
+  const mq     = parseInt(document.getElementById('qQual').value);
+  const bt     = parseInt(document.getElementById('sTier').value);
+  const bq     = parseInt(document.getElementById('sQual').value);
+  const n      = parseInt(document.getElementById('nMods').value);
+  const nItems = parseInt(document.getElementById('nItems').value) || 100;
+
+  const { spd, qual } = calcModules(mt, mq, bt, bq, n);
+  const u = upgPerMin(spd, qual, nItems);
+  const t = timeToLeg(spd, qual);
+
+  // Results
+  const qualEl = document.getElementById('res-qual');
+  qualEl.textContent = qual.toFixed(3) + '%';
+  qualEl.className = 'val' + (qual <= 0 ? ' warn' : qual >= 4 ? ' good' : '');
+
+  document.getElementById('res-speed').textContent = spd.toFixed(3) + '×';
+  document.getElementById('res-upg').textContent   = fmtUpg(u);
+  document.getElementById('res-ttl').textContent   = fmtTime(t);
+
+  // Warning / info
+  const warn = document.getElementById('warningBox');
+  const info = document.getElementById('infoBox');
+  if (qual <= 0) {
+    warn.style.display = 'block';
+    info.style.display = 'none';
+  } else {
+    warn.style.display = 'none';
+    const optN = findOptimal(mt, mq, bt, bq);
+    const { spd: os, qual: oq } = calcModules(mt, mq, bt, bq, optN);
+    const ou = upgPerMin(os, oq, nItems);
+    info.style.display = 'block';
+    if (n === optN) {
+      info.className = 'info-box good-box';
+      info.innerHTML = `<strong>✅ Você está no ponto ótimo!</strong> ${optN} módulo(s) no beacon é a configuração que maximiza o throughput para esta combinação.`;
+    } else {
+      info.className = 'info-box';
+      info.innerHTML = `<strong>💡 Dica:</strong> O ponto ótimo para esta combinação é <strong>${optN} módulo(s)</strong> no beacon, resultando em <strong>${fmtUpg(ou)} upgrades/min</strong>. Você está usando ${n} módulo(s).`;
+    }
+  }
+
+  // Table
+  updateMainTable(mt, mq, bt, bq, nItems, n);
+
+  // Chart
+  updateMainChart(mt, mq, bt, bq, nItems, n);
+}
+
+function findOptimalAndSet() {
+  const mt = parseInt(document.getElementById('qTier').value);
+  const mq = parseInt(document.getElementById('qQual').value);
+  const bt = parseInt(document.getElementById('sTier').value);
+  const bq = parseInt(document.getElementById('sQual').value);
+  const nItems = parseInt(document.getElementById('nItems').value) || 100;
+  const optN = findOptimal(mt, mq, bt, bq);
+  document.getElementById('nMods').value = optN;
+  syncSlider(document.getElementById('nMods'));
+  calculate();
+  const { spd, qual } = calcModules(mt, mq, bt, bq, optN);
+  const u = upgPerMin(spd, qual, nItems);
+  const msg = document.getElementById('optimalMsg');
+  msg.style.display = 'block';
+  msg.innerHTML = `<strong>🎯 Ótimo encontrado!</strong> Para esta combinação, o número ideal é <strong>${optN} módulo(s)</strong> no beacon → <strong>${fmtUpg(u)} upgrades/min</strong> com qualidade efetiva de <strong>${qual.toFixed(2)}%</strong>.`;
+}
+
+function resetDefaults() {
+  document.getElementById('qTier').value = '3';
+  document.getElementById('qQual').value = '4';
+  document.getElementById('sTier').value = '1';
+  document.getElementById('sQual').value = '4';
+  document.getElementById('nMods').value = '4';
+  document.getElementById('nItems').value = '100';
+  syncSlider(document.getElementById('nMods'));
+  document.getElementById('optimalMsg').style.display = 'none';
+  calculate();
+}
+
+// Override findOptimal button
+window.findOptimal = findOptimalAndSet;
+
+function updateMainTable(mt, mq, bt, bq, nItems, current) {
+  const tbody = document.getElementById('mainTableBody');
+  const optN  = findOptimal(mt, mq, bt, bq);
+  let html = '';
+  for (let n = 0; n <= 10; n++) {
+    const { spd, qual } = calcModules(mt, mq, bt, bq, n);
+    const u = upgPerMin(spd, qual, nItems);
+    const t = timeToLeg(spd, qual);
+    const isOpt  = n === optN;
+    const isZero = qual <= 0;
+    const isCur  = n === current;
+    let badge = '';
+    if (isOpt && !isZero) badge = '<span class="badge badge-best">★ ÓTIMO</span>';
+    if (isZero) badge = '<span class="badge badge-zero">✗ SEM UPGRADE</span>';
+    const rowClass = isOpt && !isZero ? 'best' : isZero ? 'zero' : '';
+    const curMark  = isCur ? ' ◀' : '';
+    html += `<tr class="${rowClass}">
+      <td><strong>${n}</strong>${curMark}</td>
+      <td>${spd.toFixed(3)}×</td>
+      <td>${qual <= 0 ? '<span style="color:var(--warn)">0.000%</span>' : qual.toFixed(3) + '%'}</td>
+      <td>${isZero ? '—' : fmtUpg(u)}</td>
+      <td>${fmtTime(t)}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function updateMainChart(mt, mq, bt, bq, nItems, current) {
+  const labels = Array.from({length:11}, (_,i) => i);
+  const upgData  = labels.map(n => { const {spd,qual} = calcModules(mt,mq,bt,bq,n); return upgPerMin(spd,qual,nItems); });
+  const qualData = labels.map(n => calcModules(mt,mq,bt,bq,n).qual);
+  const spdData  = labels.map(n => calcModules(mt,mq,bt,bq,n).spd);
+  const optN = findOptimal(mt, mq, bt, bq);
+
+  destroyChart('main');
+  const ctx = document.getElementById('chartMain').getContext('2d');
+  charts['main'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Upgrades/min',
+          data: upgData,
+          borderColor: '#FFD700',
+          backgroundColor: 'rgba(255,215,0,0.12)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: labels.map(n => n === optN ? 10 : n === current ? 8 : 4),
+          pointBackgroundColor: labels.map(n => n === optN ? '#FFD700' : n === current ? '#69F0AE' : '#FFD700'),
+          pointBorderColor: labels.map(n => n === optN ? '#fff' : n === current ? '#fff' : '#FFD700'),
+          pointBorderWidth: labels.map(n => (n === optN || n === current) ? 2 : 1),
+          yAxisID: 'y',
+          order: 1,
+        },
+        {
+          label: 'Qualidade Efetiva (%)',
+          data: qualData,
+          borderColor: '#4CAF50',
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 3,
+          borderDash: [5,3],
+          yAxisID: 'y2',
+          order: 2,
+        },
+        {
+          label: 'Velocidade Efetiva (×)',
+          data: spdData,
+          borderColor: '#00E5FF',
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 3,
+          borderDash: [3,3],
+          yAxisID: 'y2',
+          order: 3,
+        },
+      ]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        annotation: {},
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: {
+            title: ctx => `${ctx[0].label} módulo(s) no beacon`,
+            afterBody: ctx => {
+              const n = parseInt(ctx[0].label);
+              const marks = [];
+              if (n === optN) marks.push('★ PONTO ÓTIMO');
+              if (n === current) marks.push('◀ SELECIONADO');
+              return marks;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, title: { display:true, text:'Módulos de Speed no Beacon', color:'#8899aa' } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display:true, text:'Upgrades/min', color:'#FFD700' }, position:'left' },
+        y2: { ...CHART_DEFAULTS.scales.y, title: { display:true, text:'Qualidade (%) / Velocidade (×)', color:'#4CAF50' }, position:'right', grid:{drawOnChartArea:false} },
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TABELAS E GRÁFICOS POR FASE
+// ════════════════════════════════════════════════════════════════════════════
+function buildPhaseTable(tbodyId, mt, mq, bt, bq) {
+  const tbody = document.getElementById(tbodyId);
+  const optN  = findOptimal(mt, mq, bt, bq);
+  let html = '';
+  for (let n = 0; n <= 10; n++) {
+    const { spd, qual } = calcModules(mt, mq, bt, bq, n);
+    const u = upgPerMin(spd, qual, 100);
+    const t = timeToLeg(spd, qual);
+    const isOpt  = n === optN;
+    const isZero = qual <= 0;
+    const rowClass = isOpt && !isZero ? 'best' : isZero ? 'zero' : '';
+    html += `<tr class="${rowClass}">
+      <td>${n}${isOpt && !isZero ? ' ★' : ''}</td>
+      <td>${spd.toFixed(2)}×</td>
+      <td>${qual <= 0 ? '0.00%' : qual.toFixed(2) + '%'}</td>
+      <td>${isZero ? '—' : fmtUpg(u)}</td>
+      <td>${fmtTime(t)}</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function buildPhaseChart(canvasId, configs, chartId) {
+  const labels = Array.from({length:11}, (_,i) => i);
+  destroyChart(chartId);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[chartId] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: configs.map(({mt,mq,bt,bq,label,color}) => {
+        const optN = findOptimal(mt,mq,bt,bq);
+        return {
+          label,
+          data: labels.map(n => { const {spd,qual} = calcModules(mt,mq,bt,bq,n); return upgPerMin(spd,qual,100); }),
+          borderColor: color,
+          backgroundColor: color + '20',
+          fill: false,
+          tension: 0.3,
+          pointRadius: labels.map(n => n === optN ? 9 : 3),
+          pointBackgroundColor: labels.map(n => n === optN ? '#fff' : color),
+          pointBorderColor: color,
+        };
+      })
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, title: { display:true, text:'Módulos no Beacon', color:'#8899aa' } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display:true, text:'Upgrades/min (100 itens)', color:'#8899aa' } },
+      }
+    }
+  });
+}
+
+function buildCompareChart() {
+  const labels = Array.from({length:11}, (_,i) => i);
+  const configs = [
+    { mt:1, mq:0, bt:1, bq:0, label:'Early: Q T1 Normal + S T1 Normal', color:'#E91E63' },
+    { mt:2, mq:0, bt:2, bq:0, label:'Mid: Q T2 Normal + S T2 Normal',   color:'#FF9800' },
+    { mt:3, mq:0, bt:3, bq:0, label:'Late: Q T3 Normal + S T3 Normal',  color:'#FFD700' },
+    { mt:1, mq:4, bt:1, bq:4, label:'Early: Q T1 Leg + S T1 Leg',       color:'#FF69B4' },
+    { mt:2, mq:4, bt:2, bq:4, label:'Mid: Q T2 Leg + S T2 Leg',         color:'#FFC107' },
+    { mt:3, mq:4, bt:1, bq:4, label:'Late: Q T3 Leg + S T1 Leg',        color:'#FFEB3B' },
+  ];
+  destroyChart('compare');
+  const ctx = document.getElementById('chartCompare').getContext('2d');
+  charts['compare'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: configs.map(({mt,mq,bt,bq,label,color}) => {
+        const optN = findOptimal(mt,mq,bt,bq);
+        return {
+          label,
+          data: labels.map(n => { const {spd,qual} = calcModules(mt,mq,bt,bq,n); return upgPerMin(spd,qual,100); }),
+          borderColor: color,
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: labels.map(n => n === optN ? 9 : 3),
+          pointBackgroundColor: labels.map(n => n === optN ? '#fff' : color),
+          pointBorderColor: color,
+        };
+      })
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, title: { display:true, text:'Módulos no Beacon', color:'#8899aa' } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display:true, text:'Upgrades/min (100 itens)', color:'#8899aa' } },
+      }
+    }
+  });
+
+  // Fill comparison cards
+  const phases = [
+    { id:'early', mt:1, mq:0, bt:1, bq:0, n:0 },
+    { id:'mid',   mt:2, mq:0, bt:2, bq:0, n:0 },
+    { id:'late',  mt:3, mq:4, bt:1, bq:4, n:4 },
+  ];
+  phases.forEach(({id,mt,mq,bt,bq,n}) => {
+    const {spd,qual} = calcModules(mt,mq,bt,bq,n);
+    const u = upgPerMin(spd,qual,100);
+    const t = timeToLeg(spd,qual);
+    document.getElementById(`cmp-${id}-upg`).textContent = fmtUpg(u);
+    document.getElementById(`cmp-${id}-ttl`).textContent = fmtTime(t);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// RANKING GERAL
+// ════════════════════════════════════════════════════════════════════════════
+function buildRanking() {
+  const results = [];
+  for (let mt = 1; mt <= 3; mt++) {
+    for (let mq = 0; mq <= 4; mq++) {
+      for (let bt = 1; bt <= 3; bt++) {
+        for (let bq = 0; bq <= 4; bq++) {
+          const optN = findOptimal(mt, mq, bt, bq);
+          const { spd, qual } = calcModules(mt, mq, bt, bq, optN);
+          const u = upgPerMin(spd, qual, 100);
+          const t = timeToLeg(spd, qual);
+          results.push({ mt, mq, bt, bq, optN, spd, qual, u, t });
+        }
+      }
+    }
+  }
+  results.sort((a, b) => b.u - a.u);
+  const top20 = results.slice(0, 20);
+
+  const phaseLabel = mt => mt === 1 ? '<span class="phase-pill phase-early">Early T1</span>' :
+                            mt === 2 ? '<span class="phase-pill phase-mid">Mid T2</span>' :
+                                       '<span class="phase-pill phase-late">Late T3</span>';
+
+  const tbody = document.getElementById('rankingBody');
+  tbody.innerHTML = top20.map((r, i) => `
+    <tr class="${i === 0 ? 'best' : ''}">
+      <td><strong>${i + 1}</strong></td>
+      <td><span style="color:${QUAL_COLORS[r.mq]};font-weight:700">T${r.mt} ${QUAL_NAMES[r.mq]}</span></td>
+      <td><span style="color:${QUAL_COLORS[r.bq]};font-weight:700">T${r.bt} ${QUAL_NAMES[r.bq]}</span></td>
+      <td><strong>${r.optN}</strong></td>
+      <td>${r.spd.toFixed(3)}×</td>
+      <td>${r.qual.toFixed(3)}%</td>
+      <td><strong>${fmtUpg(r.u)}</strong></td>
+      <td>${fmtTime(r.t)}</td>
+      <td>${phaseLabel(r.mt)}</td>
+    </tr>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════════════════════════
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'compare') buildCompareChart();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════════
+function init() {
+  // Phase tables
+  buildPhaseTable('earlyTableBody', 1, 0, 1, 0);
+  buildPhaseTable('midTableBody',   2, 0, 2, 0);
+  buildPhaseTable('lateTableBody',  3, 4, 1, 4);
+
+  // Phase charts
+  buildPhaseChart('chartEarly', [
+    { mt:1, mq:0, bt:1, bq:0, label:'Q T1 Normal + S T1 Normal',   color:'#E91E63' },
+    { mt:1, mq:2, bt:1, bq:0, label:'Q T1 Rare + S T1 Normal',     color:'#42A5F5' },
+    { mt:1, mq:4, bt:1, bq:0, label:'Q T1 Legendary + S T1 Normal',color:'#FFA726' },
+    { mt:1, mq:4, bt:1, bq:4, label:'Q T1 Leg + S T1 Leg',         color:'#FFD700' },
+  ], 'early');
+
+  buildPhaseChart('chartMid', [
+    { mt:2, mq:0, bt:2, bq:0, label:'Q T2 Normal + S T2 Normal',   color:'#FF9800' },
+    { mt:2, mq:2, bt:2, bq:0, label:'Q T2 Rare + S T2 Normal',     color:'#42A5F5' },
+    { mt:2, mq:4, bt:2, bq:0, label:'Q T2 Legendary + S T2 Normal',color:'#FFA726' },
+    { mt:2, mq:4, bt:2, bq:4, label:'Q T2 Leg + S T2 Leg',         color:'#FFD700' },
+  ], 'mid');
+
+  buildPhaseChart('chartLate', [
+    { mt:3, mq:4, bt:1, bq:4, label:'Q T3 Leg + S T1 Leg (ÓTIMO)', color:'#FFD700' },
+    { mt:3, mq:4, bt:2, bq:4, label:'Q T3 Leg + S T2 Leg',         color:'#FFA726' },
+    { mt:3, mq:4, bt:3, bq:4, label:'Q T3 Leg + S T3 Leg',         color:'#FF9800' },
+    { mt:3, mq:0, bt:1, bq:0, label:'Q T3 Normal + S T1 Normal',   color:'#9E9E9E' },
+  ], 'late');
+
+  // Ranking
+  buildRanking();
+
+  // Main calculator
+  calculate();
+}
+
+// Sync slider on load
+document.getElementById('nMods').addEventListener('input', function() {
+  syncSlider(this);
+});
+
+// Auto-calculate when any param changes
+['qTier','qQual','sTier','sQual','nItems'].forEach(id => {
+  document.getElementById(id).addEventListener('change', calculate);
+});
+document.getElementById('nMods').addEventListener('input', calculate);
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
