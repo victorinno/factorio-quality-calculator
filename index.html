@@ -1109,7 +1109,17 @@ document.getElementById('nMods').addEventListener('input', function() {
 });
 document.getElementById('nMods').addEventListener('input', calculate);
 
-window.addEventListener('load', init);
+window.addEventListener('load', function() {
+  // Force correct defaults before init
+  document.getElementById('qTier').value = '3';
+  document.getElementById('qQual').value = '4';
+  document.getElementById('sTier').value = '1';
+  document.getElementById('sQual').value = '4';
+  document.getElementById('nMods').value = '4';
+  document.getElementById('nItems').value = '100';
+  syncSlider(document.getElementById('nMods'));
+  init();
+});
 </script>
 </body>
 </html>
